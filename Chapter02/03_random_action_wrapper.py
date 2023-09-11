@@ -1,8 +1,8 @@
-import gym
+import gymnasium as gym
 from typing import TypeVar
 import random
 
-Action = TypeVar('Action')
+Action = TypeVar("Action")
 
 
 class RandomActionWrapper(gym.ActionWrapper):
@@ -18,15 +18,15 @@ class RandomActionWrapper(gym.ActionWrapper):
 
 
 if __name__ == "__main__":
-    env = RandomActionWrapper(gym.make("CartPole-v0"))
+    env = RandomActionWrapper(gym.make("CartPole-v1", render_mode="human"))
 
     obs = env.reset()
     total_reward = 0.0
 
     while True:
-        obs, reward, done, _ = env.step(0)
+        obs, reward, terminated, truncated, info = env.step(0)
         total_reward += reward
-        if done:
+        if terminated:
             break
 
-    print("Reward got: %.2f" % total_reward)
+    print(f"Reward got: {total_reward}")

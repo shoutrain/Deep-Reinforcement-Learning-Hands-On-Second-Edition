@@ -1,17 +1,22 @@
 # Deep-Reinforcement-Learning-Hands-On-Second-Edition
+
 Deep-Reinforcement-Learning-Hands-On-Second-Edition, published by Packt
 
+> I am using python 3.10, torch 2.01, gymnasium 0.29.1(instead of gym <=0.26.2) and corresponding other packages, so please ignore the following package versions.
+
 ## Code branches
-The repository is maintained to keep dependency versions up-to-date. 
+
+The repository is maintained to keep dependency versions up-to-date.
 This requires efforts and time to test all the examples on new versions, so, be patient.
 
-The logic is following: there are several branches of the code, corresponding to 
+The logic is following: there are several branches of the code, corresponding to
 major pytorch version code was tested. Due to incompatibilities in pytorch and other components,
 **code in the printed book might differ from the code in the repo**.
 
 At the moment, there are the following branches available:
+
 * `master`: contains the code with the latest pytorch which was tested. At the moment, it is pytorch 1.7.
-* `torch-1.3-book`: code printed in the book with minor bug fixes. Uses pytorch=1.3 which 
+* `torch-1.3-book`: code printed in the book with minor bug fixes. Uses pytorch=1.3 which
 is available only on conda repos.
 * `torch-1.7`: pytorch 1.7. This branch was tested and merged into master.
 
