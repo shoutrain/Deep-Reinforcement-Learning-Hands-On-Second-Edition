@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import random
-import gym
-import gym.spaces
+import gymnasium as gym
 from collections import namedtuple
 import numpy as np
 from tensorboardX import SummaryWriter
@@ -21,7 +20,9 @@ class DiscreteOneHotWrapper(gym.ObservationWrapper):
     def __init__(self, env):
         super(DiscreteOneHotWrapper, self).__init__(env)
         assert isinstance(env.observation_space, gym.spaces.Discrete)
-        self.observation_space = gym.spaces.Box(0.0, 1.0, (env.observation_space.n, ), dtype=np.float32)
+        self.observation_space = gym.spaces.Box(
+            0.0, 1.0, (env.observation_space.n,), dtype=np.float32
+        )
 
     def observation(self, observation):
         res = np.copy(self.observation_space.low)
@@ -35,36 +36,36 @@ class Net(nn.Module):
         self.net = nn.Sequential(
             nn.Linear(obs_size, hidden_size),
             nn.ReLU(),
-            nn.Linear(hidden_size, n_actions)
+            nn.Linear(hidden_size, n_actions),
         )
 
     def forward(self, x):
         return self.net(x)
 
 
-Episode = namedtuple('Episode', field_names=['reward', 'steps'])
-EpisodeStep = namedtuple('EpisodeStep', field_names=['observation', 'action'])
+Episode = namedtuple("Episode", field_names=["reward", "steps"])
+EpisodeStep = namedtuple("EpisodeStep", field_names=["observation", "action"])
 
 
 def iterate_batches(env, net, batch_size):
     batch = []
     episode_reward = 0.0
     episode_steps = []
-    obs = env.reset()
+    obs, _ = env.reset()
     sm = nn.Softmax(dim=1)
     while True:
         obs_v = torch.FloatTensor([obs])
         act_probs_v = sm(net(obs_v))
         act_probs = act_probs_v.data.numpy()[0]
         action = np.random.choice(len(act_probs), p=act_probs)
-        next_obs, reward, is_done, _ = env.step(action)
+        next_obs, reward, terminated, _, _ = env.step(action)
         episode_reward += reward
         episode_steps.append(EpisodeStep(observation=obs, action=action))
-        if is_done:
+        if terminated:
             batch.append(Episode(reward=episode_reward, steps=episode_steps))
             episode_reward = 0.0
             episode_steps = []
-            next_obs = env.reset()
+            next_obs, _ = env.reset()
             if len(batch) == batch_size:
                 yield batch
                 batch = []
@@ -81,10 +82,8 @@ def filter_batch(batch, percentile):
     elite_batch = []
     for example, discounted_reward in zip(batch, disc_rewards):
         if discounted_reward > reward_bound:
-            train_obs.extend(map(lambda step: step.observation,
-                                 example.steps))
-            train_act.extend(map(lambda step: step.action,
-                                 example.steps))
+            train_obs.extend(map(lambda step: step.observation, example.steps))
+            train_act.extend(map(lambda step: step.action, example.steps))
             elite_batch.append(example)
 
     return elite_batch, train_obs, train_act, reward_bound
@@ -92,8 +91,10 @@ def filter_batch(batch, percentile):
 
 if __name__ == "__main__":
     random.seed(12345)
-    env = DiscreteOneHotWrapper(gym.make("FrozenLake-v0"))
-    # env = gym.wrappers.Monitor(env, directory="mon", force=True)
+    env = DiscreteOneHotWrapper(
+        gym.make("FrozenLake-v1", render_mode="rgb_array")
+    )
+    env = gym.wrappers.RecordVideo(env, video_folder="mon")
     obs_size = env.observation_space.shape[0]
     n_actions = env.action_space.n
 
@@ -103,12 +104,11 @@ if __name__ == "__main__":
     writer = SummaryWriter(comment="-frozenlake-tweaked")
 
     full_batch = []
-    for iter_no, batch in enumerate(iterate_batches(
-            env, net, BATCH_SIZE)):
-        reward_mean = float(np.mean(list(map(
-            lambda s: s.reward, batch))))
-        full_batch, obs, acts, reward_bound = \
-            filter_batch(full_batch + batch, PERCENTILE)
+    for iter_no, batch in enumerate(iterate_batches(env, net, BATCH_SIZE)):
+        reward_mean = float(np.mean(list(map(lambda s: s.reward, batch))))
+        full_batch, obs, acts, reward_bound = filter_batch(
+            full_batch + batch, PERCENTILE
+        )
         if not full_batch:
             continue
         obs_v = torch.FloatTensor(obs)
@@ -120,10 +120,17 @@ if __name__ == "__main__":
         loss_v = objective(action_scores_v, acts_v)
         loss_v.backward()
         optimizer.step()
-        print("%d: loss=%.3f, rw_mean=%.3f, "
-              "rw_bound=%.3f, batch=%d" % (
-            iter_no, loss_v.item(), reward_mean,
-            reward_bound, len(full_batch)))
+        print(
+            "%d: loss=%.3f, rw_mean=%.3f, "
+            "rw_bound=%.3f, batch=%d"
+            % (
+                iter_no,
+                loss_v.item(),
+                reward_mean,
+                reward_bound,
+                len(full_batch),
+            )
+        )
         writer.add_scalar("loss", loss_v.item(), iter_no)
         writer.add_scalar("reward_mean", reward_mean, iter_no)
         writer.add_scalar("reward_bound", reward_bound, iter_no)
