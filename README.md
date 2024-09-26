@@ -2,7 +2,7 @@
 
 Deep-Reinforcement-Learning-Hands-On-Second-Edition, published by Packt
 
-> I am using python 3.10, torch 2.01, gymnasium 0.29.1(instead of gym <=0.26.2) and corresponding other packages, so please ignore the following package versions.
+> I am using python 3.12.2, torch 2.4.1, gymnasium 0.29.1(instead of gym <=0.26.2) and corresponding other packages, so please ignore the following package versions. It's better to run these examples on linux(ubuntu 22.04). Atri doesn't seem to work on windows.
 
 ## Code branches
 

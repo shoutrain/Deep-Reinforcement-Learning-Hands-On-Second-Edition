@@ -189,7 +189,11 @@ if __name__ == "__main__":
     device = torch.device("cuda")
     envs = [
         InputWrapper(gym.make(name))
-        for name in ("Breakout-v4", "AirRaid-v4", "Pong-v4")
+        for name in (
+            "Breakout-v4",
+            "AirRaid-v4",
+            "Pong-v4",
+        )  # these don't work on windows
     ]
     input_shape = envs[0].observation_space.shape
 
@@ -233,32 +237,22 @@ if __name__ == "__main__":
 
         if trainer.state.iteration % SAVE_IMAGE_EVERY_ITER == 0:
             fake_img = vutils.make_grid(gen_output_v.data[:64], normalize=True)
-            trainer.tb.writer.add_image(
-                "fake", fake_img, trainer.state.iteration
-            )
+            trainer.tb.writer.add_image("fake", fake_img, trainer.state.iteration)
             real_img = vutils.make_grid(batch_v.data[:64], normalize=True)
-            trainer.tb.writer.add_image(
-                "real", real_img, trainer.state.iteration
-            )
+            trainer.tb.writer.add_image("real", real_img, trainer.state.iteration)
             trainer.tb.writer.flush()
         return dis_loss.item(), gen_loss.item()
 
     engine = Engine(process_batch)
     tb = tb_logger.TensorboardLogger(log_dir=None)
     engine.tb = tb
-    RunningAverage(output_transform=lambda out: out[1]).attach(
-        engine, "avg_loss_gen"
-    )
-    RunningAverage(output_transform=lambda out: out[0]).attach(
-        engine, "avg_loss_dis"
-    )
+    RunningAverage(output_transform=lambda out: out[1]).attach(engine, "avg_loss_gen")
+    RunningAverage(output_transform=lambda out: out[0]).attach(engine, "avg_loss_dis")
 
     handler = tb_logger.OutputHandler(
         tag="train", metric_names=["avg_loss_gen", "avg_loss_dis"]
     )
-    tb.attach(
-        engine, log_handler=handler, event_name=Events.ITERATION_COMPLETED
-    )
+    tb.attach(engine, log_handler=handler, event_name=Events.ITERATION_COMPLETED)
 
     @engine.on(Events.ITERATION_COMPLETED)
     def log_losses(trainer):

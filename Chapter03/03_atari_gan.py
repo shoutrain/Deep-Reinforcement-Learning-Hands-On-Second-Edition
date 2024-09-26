@@ -186,7 +186,11 @@ if __name__ == "__main__":
     device = torch.device("cuda")
     envs = [
         InputWrapper(gym.make(name))
-        for name in ("Breakout-v4", "AirRaid-v4", "Pong-v4")
+        for name in (
+            "Breakout-v4",
+            "AirRaid-v4",
+            "Pong-v4",
+        )  # these don't work on windows
     ]
     input_shape = envs[0].observation_space.shape
 
