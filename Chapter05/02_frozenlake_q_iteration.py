@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-import gym
+import gymnasium as gym
 import collections
 from tensorboardX import SummaryWriter
 
-ENV_NAME = "FrozenLake-v0"
-#ENV_NAME = "FrozenLake8x8-v0"      # uncomment for larger version
+ENV_NAME = "FrozenLake-v1"
+# ENV_NAME = "FrozenLake8x8-v1"      # uncomment for larger version
 GAMMA = 0.9
 TEST_EPISODES = 20
 
@@ -12,7 +12,7 @@ TEST_EPISODES = 20
 class Agent:
     def __init__(self):
         self.env = gym.make(ENV_NAME)
-        self.state = self.env.reset()
+        self.state, _ = self.env.reset()
         self.rewards = collections.defaultdict(float)
         self.transits = collections.defaultdict(collections.Counter)
         self.values = collections.defaultdict(float)
@@ -20,10 +20,10 @@ class Agent:
     def play_n_random_steps(self, count):
         for _ in range(count):
             action = self.env.action_space.sample()
-            new_state, reward, is_done, _ = self.env.step(action)
+            new_state, reward, terminated, _, _ = self.env.step(action)
             self.rewards[(self.state, action, new_state)] = reward
             self.transits[(self.state, action)][new_state] += 1
-            self.state = self.env.reset() if is_done else new_state
+            self.state = self.env.reset()[0] if terminated else new_state
 
     def select_action(self, state):
         best_action, best_value = None, None
@@ -36,14 +36,14 @@ class Agent:
 
     def play_episode(self, env):
         total_reward = 0.0
-        state = env.reset()
+        state, _ = env.reset()
         while True:
             action = self.select_action(state)
-            new_state, reward, is_done, _ = env.step(action)
+            new_state, reward, terminated, _, _ = env.step(action)
             self.rewards[(state, action, new_state)] = reward
             self.transits[(state, action)][new_state] += 1
             total_reward += reward
-            if is_done:
+            if terminated:
                 break
             state = new_state
         return total_reward
@@ -58,8 +58,7 @@ class Agent:
                     key = (state, action, tgt_state)
                     reward = self.rewards[key]
                     best_action = self.select_action(tgt_state)
-                    val = reward + GAMMA * \
-                          self.values[(tgt_state, best_action)]
+                    val = reward + GAMMA * self.values[(tgt_state, best_action)]
                     action_value += (count / total) * val
                 self.values[(state, action)] = action_value
 
