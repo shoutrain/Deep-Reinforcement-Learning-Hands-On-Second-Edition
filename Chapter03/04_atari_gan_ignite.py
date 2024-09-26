@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import random
-import argparse
 import cv2
 
 import torch
@@ -13,7 +12,9 @@ from ignite.contrib.handlers import tensorboard_logger as tb_logger
 import torchvision.utils as vutils
 
 import gymnasium as gym
+import ale_py
 
+gym.register_envs(ale_py)  # make gymnasium work with atari
 import numpy as np
 
 log = gym.logger
@@ -189,11 +190,7 @@ if __name__ == "__main__":
     device = torch.device("cuda")
     envs = [
         InputWrapper(gym.make(name))
-        for name in (
-            "Breakout-v4",
-            "AirRaid-v4",
-            "Pong-v4",
-        )  # these don't work on windows
+        for name in ("Breakout-v4", "AirRaid-v4", "Pong-v4")
     ]
     input_shape = envs[0].observation_space.shape
 
